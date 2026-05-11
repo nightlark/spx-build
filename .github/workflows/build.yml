@@ -12,8 +12,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: TuomoKu/SPX-GC
-          ref: master # Clones the latest code from the master branch
-          path: spx-source # Downloads it into this specific subfolder
+          ref: master
+          path: spx-source
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -26,22 +26,23 @@ jobs:
 
       - name: Build Executable with PKG
         working-directory: ./spx-source
+        shell: cmd
         run: |
           npm install -g pkg
-          # Ensure the build directory exists
-          mkdir build
+          if not exist build mkdir build
           pkg . --targets node18-win-x64 --output build/spx-graphics.exe
 
       - name: Prepare Portable Package
         working-directory: ./spx-source
+        shell: cmd
         run: |
-          mkdir ../dist
-          copy build\spx-graphics.exe ..\dist\
-          # Recursively copy the required asset directories
-          xcopy /E /I cfg ..\dist\cfg
-          xcopy /E /I dat ..\dist\dat
-          xcopy /E /I templates ..\dist\templates
-          if exist LICENSE.txt copy LICENSE.txt ..\dist\
+          if not exist "..\dist" mkdir "..\dist"
+          copy "build\spx-graphics.exe" "..\dist\"
+          :: Recursively copy the required asset directories
+          xcopy /E /I /Y cfg "..\dist\cfg"
+          xcopy /E /I /Y dat "..\dist\dat"
+          xcopy /E /I /Y templates "..\dist\templates"
+          if exist LICENSE.txt copy LICENSE.txt "..\dist\"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
