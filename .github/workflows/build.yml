@@ -1,0 +1,50 @@
+name: Build Remote SPX-GC Executable
+
+on:
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Clone SPX-GC Repository
+        uses: actions/checkout@v4
+        with:
+          repository: TuomoKu/SPX-GC
+          ref: master # Clones the latest code from the master branch
+          path: spx-source # Downloads it into this specific subfolder
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        working-directory: ./spx-source
+        run: npm install
+
+      - name: Build Executable with PKG
+        working-directory: ./spx-source
+        run: |
+          npm install -g pkg
+          # Ensure the build directory exists
+          mkdir build
+          pkg . --targets node18-win-x64 --output build/spx-graphics.exe
+
+      - name: Prepare Portable Package
+        working-directory: ./spx-source
+        run: |
+          mkdir ../dist
+          copy build\spx-graphics.exe ..\dist\
+          # Recursively copy the required asset directories
+          xcopy /E /I cfg ..\dist\cfg
+          xcopy /E /I dat ..\dist\dat
+          xcopy /E /I templates ..\dist\templates
+          if exist LICENSE.txt copy LICENSE.txt ..\dist\
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spx-graphics-portable
+          path: dist/
