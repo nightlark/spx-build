@@ -18,24 +18,21 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Upgraded to 20 to satisfy dependencies
+          node-version: '20'
 
       - name: Build and Package
         shell: pwsh
         working-directory: ./spx-source
         run: |
-          # 1. Install dependencies
           npm install
           
-          # 2. Build the executable using npx (no global install needed)
-          # We use '.' to let pkg read the package.json
           mkdir -Force build
-          npx pkg . --targets node20-win-x64 --output build/spx-graphics.exe
+
+          # pkg does not support node20 target
+          npx pkg . --targets node18-win-x64 --output build/spx-graphics.exe
           
-          # 3. Create the distribution folder
           mkdir -Force ../dist
           
-          # 4. Move the executable to dist
           if (Test-Path "build/spx-graphics.exe") {
               Copy-Item "build/spx-graphics.exe" -Destination "../dist/"
               Write-Host "Successfully copied executable."
@@ -44,19 +41,18 @@ jobs:
               exit 1
           }
           
-          # 5. Copy required asset folders recursively
           $folders = @("cfg", "dat", "templates")
           foreach ($f in $folders) {
               if (Test-Path $f) {
                   Copy-Item -Path $f -Destination "../dist/" -Recurse -Force
                   Write-Host "Copied folder: $f"
-              } else {
-                  Write-Warning "Folder $f not found in source, skipping."
               }
           }
           
-          # 6. Copy License and Package Info
-          if (Test-Path "LICENSE.txt") { Copy-Item "LICENSE.txt" -Destination "../dist/" }
+          if (Test-Path "LICENSE.txt") {
+              Copy-Item "LICENSE.txt" -Destination "../dist/"
+          }
+
           Copy-Item "package.json" -Destination "../dist/"
 
       - name: Upload Artifact
